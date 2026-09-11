@@ -1,0 +1,1 @@
+{"main-capability":{"identifier":"main-capability","description":"Permissions for the main WCompiler window","local":true,"windows":["main"],"permissions":["core:default","dialog:default",{"identifier":"fs:allow-write-text-file","allow":[{"path":"$HOME/**"},{"path":"$DOWNLOAD/**"},{"path":"$DOCUMENT/**"},{"path":"$DESKTOP/**"}]}]}}

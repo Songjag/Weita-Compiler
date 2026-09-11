@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" role="img" aria-label="C++ code favicon">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#111827"/>
+      <stop offset="1" stop-color="#1e1b4b"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#60a5fa"/>
+      <stop offset="0.55" stop-color="#38bdf8"/>
+      <stop offset="1" stop-color="#a78bfa"/>
+    </linearGradient>
+    <filter id="glow" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="2.5" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <clipPath id="clip"><rect x="3" y="3" width="94" height="94" rx="20"/></clipPath>
+  </defs>
+
+  <rect x="3" y="3" width="94" height="94" rx="20" fill="url(#bg)"/>
+  <rect x="3.75" y="3.75" width="92.5" height="92.5" rx="19.25" fill="none" stroke="#334155" stroke-width="1.5"/>
+
+  <g clip-path="url(#clip)" opacity=".45">
+    <circle cx="76" cy="18" r="28" fill="#2563eb" opacity=".16"/>
+    <circle cx="18" cy="82" r="30" fill="#7c3aed" opacity=".13"/>
+    <path d="M-10 75L75 -10" stroke="#38bdf8" stroke-width="8" opacity=".08"/>
+  </g>
+
+  <g filter="url(#glow)" fill="none" stroke="url(#accent)" stroke-width="7" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M37 27L15 50L37 73"/>
+    <path d="M63 27L85 50L63 73"/>
+    <path d="M56 22L44 78"/>
+  </g>
+
+  <g fill="none" stroke="#e0f2fe" stroke-width="2.2" stroke-linecap="round" opacity=".9">
+    <path d="M37 28L16.5 50L37 72"/>
+    <path d="M63 28L83.5 50L63 72"/>
+  </g>
+
+  <circle cx="50" cy="50" r="43" fill="none" stroke="#60a5fa" stroke-width=".8" opacity=".18"/>
+</svg>
