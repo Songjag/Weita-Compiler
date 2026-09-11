@@ -92,9 +92,60 @@ jobs:
             src-tauri/target/release/bundle/msi/*.msi
             src-tauri/target/release/bundle/nsis/*.exe
 
+  # ── macOS (.app + .dmg + .pkg) ─────────────────────────────────────────────
+  build-macos:
+    runs-on: macos-13
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-apple-darwin
+
+      - name: Cache Rust
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+
+      - name: Install npm dependencies
+        run: npm install
+
+      - name: Build macOS app and disk image
+        run: npx tauri build --bundles app,dmg
+
+      - name: Build macOS installer package
+        shell: bash
+        run: |
+          APP_PATH="src-tauri/target/release/bundle/macos/WCompiler.app"
+          PKG_PATH="src-tauri/target/release/bundle/macos/WCompiler_0.1.0_x64.pkg"
+          APP_ZIP_PATH="src-tauri/target/release/bundle/macos/WCompiler_0.1.0_x64.app.zip"
+          test -d "$APP_PATH"
+          pkgbuild \
+            --component "$APP_PATH" \
+            --install-location /Applications \
+            "$PKG_PATH"
+          ditto -c -k --sequesterRsrc --keepParent "$APP_PATH" "$APP_ZIP_PATH"
+
+      - name: Upload macOS artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: wcompiler-macos
+          path: |
+            src-tauri/target/release/bundle/macos/WCompiler.app
+            src-tauri/target/release/bundle/dmg/*.dmg
+            src-tauri/target/release/bundle/macos/*.pkg
+            src-tauri/target/release/bundle/macos/*.app.zip
+
   # ── Release: đính kèm artifacts vào GitHub Release ───────────────────────
   release:
-    needs: [build-linux, build-windows]
+    needs: [build-linux, build-windows, build-macos]
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/')
     permissions:
@@ -112,10 +163,19 @@ jobs:
           name: wcompiler-windows
           path: artifacts/windows
 
+      - name: Download macOS artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: wcompiler-macos
+          path: artifacts/macos
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           files: |
             artifacts/linux/**
             artifacts/windows/**
+            artifacts/macos/**/*.dmg
+            artifacts/macos/**/*.pkg
+            artifacts/macos/**/*.app.zip
           generate_release_notes: true
