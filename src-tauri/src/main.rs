@@ -1,5 +1,5 @@
-// Prevents an additional console window on Windows in release
-#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
+// Prevents an additional console window on Windows
+#![cfg_attr(target_os = "windows", windows_subsystem = "windows")]
 
 mod commands;
 mod runner;
