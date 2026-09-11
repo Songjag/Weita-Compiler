@@ -94,7 +94,7 @@ jobs:
 
   # ── macOS (.app + .dmg + .pkg) ─────────────────────────────────────────────
   build-macos:
-    runs-on: macos-13
+    runs-on: macos-15
     steps:
       - uses: actions/checkout@v4
 
@@ -107,7 +107,7 @@ jobs:
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
         with:
-          targets: x86_64-apple-darwin
+          targets: x86_64-apple-darwin,aarch64-apple-darwin
 
       - name: Cache Rust
         uses: swatinem/rust-cache@v2
@@ -117,15 +117,15 @@ jobs:
       - name: Install npm dependencies
         run: npm install
 
-      - name: Build macOS app and disk image
-        run: npx tauri build --bundles app,dmg
+      - name: Build macOS app and disk image (universal)
+        run: npx tauri build --target universal-apple-darwin --bundles app,dmg
 
       - name: Build macOS installer package
         shell: bash
         run: |
-          APP_PATH="src-tauri/target/release/bundle/macos/WCompiler.app"
-          PKG_PATH="src-tauri/target/release/bundle/macos/WCompiler_0.1.0_x64.pkg"
-          APP_ZIP_PATH="src-tauri/target/release/bundle/macos/WCompiler_0.1.0_x64.app.zip"
+          APP_PATH="src-tauri/target/universal-apple-darwin/release/bundle/macos/WCompiler.app"
+          PKG_PATH="src-tauri/target/universal-apple-darwin/release/bundle/macos/WCompiler_0.1.0_universal.pkg"
+          APP_ZIP_PATH="src-tauri/target/universal-apple-darwin/release/bundle/macos/WCompiler_0.1.0_universal.app.zip"
           test -d "$APP_PATH"
           pkgbuild \
             --component "$APP_PATH" \
@@ -138,44 +138,7 @@ jobs:
         with:
           name: wcompiler-macos
           path: |
-            src-tauri/target/release/bundle/macos/WCompiler.app
-            src-tauri/target/release/bundle/dmg/*.dmg
-            src-tauri/target/release/bundle/macos/*.pkg
-            src-tauri/target/release/bundle/macos/*.app.zip
-
-  # ── Release: đính kèm artifacts vào GitHub Release ───────────────────────
-  release:
-    needs: [build-linux, build-windows, build-macos]
-    runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/tags/')
-    permissions:
-      contents: write
-    steps:
-      - name: Download Linux artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: wcompiler-linux
-          path: artifacts/linux
-
-      - name: Download Windows artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: wcompiler-windows
-          path: artifacts/windows
-
-      - name: Download macOS artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: wcompiler-macos
-          path: artifacts/macos
-
-      - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
-        with:
-          files: |
-            artifacts/linux/**
-            artifacts/windows/**
-            artifacts/macos/**/*.dmg
-            artifacts/macos/**/*.pkg
-            artifacts/macos/**/*.app.zip
-          generate_release_notes: true
+            src-tauri/target/universal-apple-darwin/release/bundle/macos/WCompiler.app
+            src-tauri/target/universal-apple-darwin/release/bundle/dmg/*.dmg
+            src-tauri/target/universal-apple-darwin/release/bundle/macos/*.pkg
+            src-tauri/target/universal-apple-darwin/release/bundle/macos/*.app.zip
