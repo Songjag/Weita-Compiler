@@ -4,6 +4,9 @@ pub mod extractor;
 pub mod installer;
 pub mod cpp;
 
+#[cfg(feature = "bundled-toolchain")]
+pub mod bundled;
+
 use serde::{Deserialize, Serialize};
 
 /// Public toolchain status reported to the frontend.

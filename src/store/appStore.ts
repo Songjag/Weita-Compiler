@@ -36,6 +36,7 @@ export function useAppStore() {
   const [code, setCode] = useState<string>(DEFAULT_CPP_CODE);
 
   const [stdin, setStdin] = useState<string>("");
+  const [activeRightTab, setActiveRightTab] = useState<"console" | "io">("console");
 
   // ── Run state ─────────────────────────────────────────────
   const [isRunning, setIsRunning] = useState<boolean>(false);
@@ -70,7 +71,8 @@ export function useAppStore() {
 
   // ── UI Language ───────────────────────────────────────────
   const [uiLang, setUiLangState] = useState<UILang>(() => {
-    return (localStorage.getItem("wc-lang") as UILang) ?? "en";
+    const saved = localStorage.getItem("wc-lang");
+    return (saved === "en" || saved === "vi") ? saved : "en";
   });
   const setUiLang = useCallback((lang: UILang) => {
     setUiLangState(lang);
@@ -143,6 +145,8 @@ export function useAppStore() {
     // io
     stdin,
     setStdin,
+    activeRightTab,
+    setActiveRightTab,
     // run
     isRunning,
     setIsRunning,

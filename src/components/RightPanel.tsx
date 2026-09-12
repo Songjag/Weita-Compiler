@@ -1,9 +1,11 @@
 import React from "react";
-import { RunResult } from "../types";
+import { RunResult, RunStatus } from "../types";
 import { ProblemImage, ProblemDropZone } from "./ProblemImage";
 import { makeT, UILang } from "../i18n/useI18n";
 
 interface RightPanelProps {
+  activeTab: "console" | "io";
+  onTabChange: (tab: "console" | "io") => void;
   stdin: string;
   onStdinChange: (val: string) => void;
   runResult: RunResult | null;
@@ -17,6 +19,8 @@ interface RightPanelProps {
 }
 
 export const RightPanel: React.FC<RightPanelProps> = ({
+  activeTab,
+  onTabChange,
   stdin,
   onStdinChange,
   runResult,
@@ -29,10 +33,13 @@ export const RightPanel: React.FC<RightPanelProps> = ({
   width,
 }) => {
   const T = makeT(uiLang);
+  const hasImage = problemImage !== null;
 
   return (
     <div className="right-panel" style={{ width, minWidth: width, maxWidth: width }}>
-      {problemImage && (
+
+      {/* ── Image frame ── */}
+      {hasImage && (
         <ProblemImage
           image={problemImage}
           onRemove={() => onSetProblemImage(null)}
@@ -40,43 +47,128 @@ export const RightPanel: React.FC<RightPanelProps> = ({
         />
       )}
 
-      <div className="panel-tabs">
-        <span className="panel-title">{T("io")}</span>
-        <div className="panel-tabs-spacer" />
+      {/* ── Console/IO section ── */}
+      <div className={`panel-bottom ${hasImage ? "has-frame" : ""}`}>
+        <div className="panel-tabs">
+          <button
+            className={`panel-tab ${activeTab === "console" ? "active" : ""}`}
+            onClick={() => onTabChange("console")}
+          >
+            {T("console")}
+          </button>
+          <button
+            className={`panel-tab ${activeTab === "io" ? "active" : ""}`}
+            onClick={() => onTabChange("io")}
+          >
+            {T("io")}
+          </button>
+          <div className="panel-tabs-spacer" />
 
-        {!problemImage && (
-          <ProblemDropZone onImage={onSetProblemImage} uiLang={uiLang} />
+          {/* DropZone — hiện khi chưa có ảnh */}
+          {!hasImage && (
+            <ProblemDropZone
+              onImage={onSetProblemImage}
+              uiLang={uiLang}
+            />
+          )}
+
+          <button className="panel-clear-btn" onClick={onClear}>
+            ✕ {T("clear")}
+          </button>
+        </div>
+
+        {activeTab === "console" ? (
+          <ConsoleView
+            runResult={runResult}
+            consoleOutput={consoleOutput}
+            isRunning={isRunning}
+            uiLang={uiLang}
+          />
+        ) : (
+          <IOView
+            stdin={stdin}
+            onStdinChange={onStdinChange}
+            runResult={runResult}
+            uiLang={uiLang}
+          />
         )}
-
-        <button className="panel-clear-btn" onClick={onClear}>
-          ✕ {T("clear")}
-        </button>
       </div>
-
-      <IOView
-        stdin={stdin}
-        onStdinChange={onStdinChange}
-        runResult={runResult}
-        consoleOutput={consoleOutput}
-        isRunning={isRunning}
-        uiLang={uiLang}
-      />
     </div>
   );
 };
 
-// ─── I/O View ─────────────────────────────────────────────────────────────────
+// ─── Console ──────────────────────────────────────────────────────────────────
 
-interface IOViewProps {
-  stdin: string;
-  onStdinChange: (v: string) => void;
+interface ConsoleViewProps {
   runResult: RunResult | null;
   consoleOutput: string;
   isRunning: boolean;
   uiLang: UILang;
 }
 
-const IOView: React.FC<IOViewProps> = ({ stdin, onStdinChange, runResult, consoleOutput, isRunning, uiLang }) => {
+const ConsoleView: React.FC<ConsoleViewProps> = ({ runResult, consoleOutput, isRunning, uiLang }) => {
+  const T = makeT(uiLang);
+
+  const BADGE: Record<RunStatus, { label: () => string; cls: string }> = {
+    SUCCESS:               { label: () => T("badgeSuccess"),       cls: "badge-success" },
+    COMPILE_ERROR:         { label: () => T("badgeCompileError"),  cls: "badge-error"   },
+    RUNTIME_ERROR:         { label: () => T("badgeRuntimeError"),  cls: "badge-error"   },
+    TIMEOUT:               { label: () => T("badgeTimeout"),       cls: "badge-warn"    },
+    OUTPUT_LIMIT_EXCEEDED: { label: () => T("badgeOutputLimit"),   cls: "badge-warn"    },
+    PROCESS_START_FAILED:  { label: () => T("badgeProcessFailed"), cls: "badge-error"   },
+    UNKNOWN_ERROR:         { label: () => T("badgeError"),         cls: "badge-error"   },
+    VALUE_ERROR:           { label: () => T("badgeError"),         cls: "badge-error"   },
+  };
+
+  const badge = runResult ? BADGE[runResult.status] : null;
+
+  return (
+    <div className="console-view">
+      {isRunning && (
+        <div className="running-indicator">
+          <span className="spinner" /> {T("running")}
+        </div>
+      )}
+      {(consoleOutput || runResult?.stdout) && (
+        <section className="output-section">
+          <div className="output-label">{T("output")}</div>
+          <pre className="output-pre stdout">{consoleOutput || runResult?.stdout}</pre>
+        </section>
+      )}
+      {runResult?.stderr && (
+        <section className="output-section">
+          <div className="output-label error-label">
+            {runResult.status === "COMPILE_ERROR" ? T("compileError") : T("stderr")}
+          </div>
+          <pre className="output-pre stderr">{runResult.stderr}</pre>
+        </section>
+      )}
+      {runResult && badge && (
+        <div className="console-footer">
+          <span className={`badge ${badge.cls}`}>{badge.label()}</span>
+          {runResult.exit_code !== null && runResult.status === "SUCCESS" && (
+            <span className="meta">{T("exitCode")} {runResult.exit_code}</span>
+          )}
+          <span className="meta">{runResult.execution_time_ms} {T("executionTime")}</span>
+        </div>
+      )}
+      {!isRunning && !runResult && !consoleOutput && (
+        <div className="console-empty">{T("pressRunHint")}</div>
+      )}
+    </div>
+  );
+};
+
+// ─── I/O ──────────────────────────────────────────────────────────────────────
+
+interface IOViewProps {
+  stdin: string;
+  onStdinChange: (v: string) => void;
+  runResult: RunResult | null;
+  uiLang: UILang;
+}
+
+const IOView: React.FC<IOViewProps> = ({ stdin, onStdinChange, runResult, uiLang }) => {
   const T = makeT(uiLang);
   return (
     <div className="io-view">
@@ -86,32 +178,18 @@ const IOView: React.FC<IOViewProps> = ({ stdin, onStdinChange, runResult, consol
           className="stdin-textarea"
           value={stdin}
           onChange={(e) => onStdinChange(e.target.value)}
-          placeholder={T("inputHint")}
+          placeholder={T("inputPlaceholder")}
           spellCheck={false}
         />
       </section>
-
-      {isRunning && <div className="running-indicator"><span className="spinner" /> {T("running")}</div>}
-
-      {(runResult || consoleOutput) && (
+      {runResult && (
         <section className="io-section">
           <div className="output-label">{T("outputStdout")}</div>
           <pre className="output-pre stdout io-output">
-            {consoleOutput || "(no output)"}
+            {runResult.stdout || "(no output)"}
           </pre>
         </section>
       )}
-
-      {runResult?.stderr && (
-        <section className="io-section">
-          <div className="output-label error-label">
-            {runResult.status === "COMPILE_ERROR" ? T("compileError") : T("stderr")}
-          </div>
-          <pre className="output-pre stderr io-output">{runResult.stderr}</pre>
-        </section>
-      )}
-
-      {!isRunning && !runResult && !consoleOutput && <div className="console-empty">{T("pressRunHint")}</div>}
     </div>
   );
 };

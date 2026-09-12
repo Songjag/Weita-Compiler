@@ -245,6 +245,19 @@ html, body, #root {
   left: -4px; right: -4px;
 }
 
+/* ─── Panel bottom (tabs + console/io) ───────────────────────────────── */
+.panel-bottom {
+  display: flex;
+  flex-direction: column;
+  flex: 1;          /* khi không có frame: chiếm toàn bộ */
+  min-height: 0;
+  overflow: hidden;
+}
+
+.panel-bottom.has-frame {
+  flex: 6;          /* khi có frame: tỷ lệ 6 so với frame=4 */
+}
+
 /* ─── Right panel ────────────────────────────────────────────────────── */
 .right-panel {
   display: flex;
@@ -560,8 +573,9 @@ html, body, #root {
   display: flex; flex-direction: column;
   border-bottom: var(--border);
   background: var(--bg-mantle);
-  max-height: 45%; min-height: 120px;
-  flex-shrink: 0;
+  flex: 4;
+  min-height: 120px;
+  overflow: hidden;
 }
 
 .problem-header {
@@ -594,6 +608,33 @@ html, body, #root {
   transition: transform 0.1s ease; user-select: none;
 }
 
+.web-frame { flex: 4; min-height: 120px; overflow: hidden; }
+
+.embedded-web {
+  display: block;
+  width: 100%;
+  height: 100%;
+  flex: 1;
+  border: 0;
+  background: #fff;
+}
+
+.web-frame-message {
+  min-height: 120px;
+  padding: 24px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  color: var(--text-sub);
+  background: var(--bg-base);
+  font-size: 12px;
+}
+
+.web-frame-message strong { color: var(--yellow); }
+
 /* ─── Drop Zone ──────────────────────────────────────────────────────── */
 .problem-dropzone {
   display: flex; align-items: center; gap: 4px;
@@ -616,6 +657,8 @@ html, body, #root {
 .dropzone-icon { font-size: 13px; }
 .dropzone-text { font-weight: 500; white-space: nowrap; }
 .dropzone-hint { color: var(--text-dim); font-size: 10px; white-space: nowrap; }
+
+.web-add-btn { border: 1px dashed var(--bg-surface1); }
 
 /* ─── Custom Select (theme-aware) ────────────────────────────────────── */
 .wc-select {
@@ -744,3 +787,179 @@ html, body, #root {
   border: none;
   cursor: pointer;
 }
+
+/* ─── Web Frame blocked notice ───────────────────────────────────────── */
+.webframe-blocked {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 20px 16px;
+  background: var(--bg-base);
+  text-align: center;
+}
+
+.webframe-blocked-icon {
+  font-size: 28px;
+}
+
+.webframe-blocked-msg {
+  font-size: 12px;
+  color: var(--text-sub);
+  line-height: 1.5;
+}
+
+.webframe-blocked-msg strong {
+  color: var(--yellow);
+}
+
+.webframe-open-btn {
+  display: inline-block;
+  padding: 6px 16px;
+  background: var(--blue);
+  color: #fff;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: filter 0.15s;
+}
+.webframe-open-btn:hover { filter: brightness(1.1); }
+
+/* ─── Web Frame (iframe embed) ───────────────────────────────────────── */
+.problem-webframe-wrap {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  background: #fff;
+}
+
+.problem-iframe {
+  width: 100%;
+  height: 100%;
+  border: none;
+  display: block;
+}
+
+/* ─── Mini-browser toolbar (WebFrame.tsx) ────────────────────────────── */
+.webframe-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 4px 6px;
+  background: var(--bg-crust);
+  border-bottom: var(--border);
+  flex-shrink: 0;
+  height: 34px;
+}
+
+/* Make nav buttons a fixed small square */
+.wf-nav-btn {
+  flex-shrink: 0;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  border-radius: 4px;
+}
+
+/* Address / URL bar */
+.wf-address-bar {
+  flex: 1;
+  min-width: 0;
+  height: 26px;
+  background: var(--bg-surface0);
+  border: 1px solid var(--bg-surface1);
+  border-radius: 5px;
+  color: var(--text-main);
+  font-size: 11px;
+  padding: 0 8px;
+  outline: none;
+  font-family: 'Cascadia Code', 'JetBrains Mono', monospace;
+  transition: border-color 0.15s;
+  margin: 0 3px;
+}
+.wf-address-bar:focus {
+  border-color: var(--blue);
+  background: var(--bg-surface1);
+}
+.wf-address-bar::placeholder { color: var(--text-dim); }
+
+/* Disabled state for back/forward buttons */
+.wf-nav-btn.wf-disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.prob-loading {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border: 2px solid var(--bg-surface1);
+  border-top-color: var(--blue);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  margin-right: 2px;
+}
+
+/* ─── DropZone group (ảnh + URL side by side) ────────────────────────── */
+.dropzone-group {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-right: 4px;
+}
+
+.url-btn {
+  border: 1px dashed var(--bg-surface1) !important;
+}
+
+/* ─── URL input inline ───────────────────────────────────────────────── */
+.url-input-wrap {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-right: 4px;
+}
+
+.url-input {
+  background: var(--bg-surface0);
+  border: 1px solid var(--blue);
+  border-radius: 5px;
+  color: var(--text-main);
+  font-size: 12px;
+  padding: 4px 8px;
+  outline: none;
+  width: 180px;
+}
+.url-input::placeholder { color: var(--text-dim); }
+
+.url-submit-btn {
+  background: var(--blue);
+  color: #fff;
+  border: none;
+  border-radius: 5px;
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.url-submit-btn:hover { filter: brightness(1.1); }
+
+.url-cancel-btn {
+  background: var(--bg-surface0);
+  color: var(--text-dim);
+  border: none;
+  border-radius: 5px;
+  padding: 4px 8px;
+  font-size: 12px;
+  cursor: pointer;
+}
+.url-cancel-btn:hover { color: var(--red); background: var(--bg-surface1); }

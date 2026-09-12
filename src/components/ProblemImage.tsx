@@ -1,6 +1,8 @@
 import React, { useRef, useState, useCallback } from "react";
 import { makeT, UILang } from "../i18n/useI18n";
 
+// ─── Image frame ──────────────────────────────────────────────────────────────
+
 interface ProblemImageProps {
   image: string;
   onRemove: () => void;
@@ -13,7 +15,7 @@ export const ProblemImage: React.FC<ProblemImageProps> = ({ image, onRemove, uiL
 
   const handleWheel = useCallback((e: React.WheelEvent) => {
     e.preventDefault();
-    setZoom((z) => Math.min(4, Math.max(0.3, z - e.deltaY * 0.001)));
+    setZoom((z) => Math.min(4, Math.max(0.5, z - e.deltaY * 0.001)));
   }, []);
 
   return (
@@ -24,8 +26,8 @@ export const ProblemImage: React.FC<ProblemImageProps> = ({ image, onRemove, uiL
           <button className="prob-btn" onClick={() => setZoom(1)} title={T("resetZoom")}>
             {Math.round(zoom * 100)}%
           </button>
-          <button className="prob-btn" onClick={() => setZoom((z) => Math.min(4, z + 0.2))}>＋</button>
-          <button className="prob-btn" onClick={() => setZoom((z) => Math.max(0.3, z - 0.2))}>－</button>
+          <button className="prob-btn" onClick={() => setZoom((z) => Math.min(4, z + 0.25))}>＋</button>
+          <button className="prob-btn" onClick={() => setZoom((z) => Math.max(0.5, z - 0.25))}>－</button>
           <button className="prob-btn prob-btn-remove" onClick={onRemove} title={T("removeImage")}>✕</button>
         </div>
       </div>
@@ -35,7 +37,10 @@ export const ProblemImage: React.FC<ProblemImageProps> = ({ image, onRemove, uiL
           src={image}
           alt={T("problemTitle")}
           className="problem-img"
-          style={{ transform: `scale(${zoom})`, transformOrigin: "top left" }}
+          style={{
+            transform: `scale(${zoom})`,
+            transformOrigin: "top center",
+          }}
           draggable={false}
         />
       </div>
@@ -74,7 +79,11 @@ export const ProblemDropZone: React.FC<DropZoneProps> = ({ onImage, uiLang }) =>
       onClick={() => inputRef.current?.click()}
       title={T("dragOrClick")}
     >
-      <input ref={inputRef} type="file" accept="image/*" style={{ display: "none" }}
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/*"
+        style={{ display: "none" }}
         onChange={(e) => { const f = e.target.files?.[0]; if (f) readFile(f); e.target.value = ""; }}
       />
       <span className="dropzone-icon">🖼</span>

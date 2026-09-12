@@ -13,17 +13,25 @@ use super::{
 
 /// Check current toolchain status.
 /// On Linux: always tries system compiler first.
-/// On Windows: tries system, then checks managed toolchain dir.
+/// On Windows (bundled build): checks bundled extracted toolchain first.
+/// On Windows (download build): tries system, then managed toolchain dir.
 pub async fn check_toolchain() -> ToolchainInfo {
     info!("Checking toolchain for platform: {}", platform_key());
 
-    // 1. Check system compiler
+    // 1. Check system compiler (all platforms)
     if let Some((gcc, _gpp, version)) = detect_system_compiler() {
         info!("Using system compiler: {}", gcc);
         return make_ready_info("gcc", &version, &gcc);
     }
 
-    // 2. Check if managed toolchain is already installed
+    // 2a. Bundled toolchain (Windows bundled build only)
+    #[cfg(feature = "bundled-toolchain")]
+    if let Some(info) = super::bundled::check_extracted() {
+        return info;
+    }
+
+    // 2b. Managed/downloaded toolchain (non-bundled builds)
+    #[cfg(not(feature = "bundled-toolchain"))]
     if let Some(info) = check_managed_toolchain() {
         return info;
     }
@@ -70,16 +78,27 @@ pub async fn install_toolchain(app: AppHandle) -> Result<ToolchainInfo> {
     let key = platform_key();
     info!("Installing toolchain for: {}", key);
 
-    let entry = manifest_for_platform(&key)
-        .context(format!("No toolchain manifest for platform: {}", key))?;
-
-    // Linux: prompt-based, guide user to use package manager
-    if key.starts_with("linux") {
-        return install_linux_toolchain(&app).await;
+    // ── Bundled build (Windows): extract from app resources ──────────────────
+    #[cfg(feature = "bundled-toolchain")]
+    {
+        emit_progress(&app, 0, 0, DownloadPhase::Extracting, "Extracting bundled toolchain…");
+        let info = super::bundled::extract_bundled(&app).await?;
+        emit_progress(&app, 0, 0, DownloadPhase::Done, "Compiler ready!");
+        return Ok(info);
     }
 
-    // Windows (and others): download portable toolchain
-    install_windows_toolchain(&app, entry).await
+    // ── Download build ────────────────────────────────────────────────────────
+    #[cfg(not(feature = "bundled-toolchain"))]
+    {
+        let entry = manifest_for_platform(&key)
+            .context(format!("No toolchain manifest for platform: {}", key))?;
+
+        if key.starts_with("linux") {
+            return install_linux_toolchain(&app).await;
+        }
+
+        install_windows_toolchain(&app, entry).await
+    }
 }
 
 async fn install_linux_toolchain(app: &AppHandle) -> Result<ToolchainInfo> {
@@ -285,19 +304,34 @@ pub fn resolve_compiler_paths(
         return Ok((PathBuf::from(gcc), PathBuf::from(gpp), None));
     }
 
-    // Managed toolchain
-    let tc_dir = super::toolchains_dir();
+    // Bundled toolchain (Windows bundled build)
+    #[cfg(feature = "bundled-toolchain")]
+    {
+        let tc_dir = super::toolchains_dir().join("mingw64");
+        if let Some(bin_dir) = find_compiler_bin_dir(&tc_dir) {
+            let gcc = bin_dir.join("gcc.exe");
+            let gpp = bin_dir.join("g++.exe");
+            let env_path = bin_dir.to_string_lossy().into_owned();
+            return Ok((gcc, gpp, Some(env_path)));
+        }
+    }
 
-    #[cfg(target_os = "windows")]
-    let (gcc_name, gpp_name) = ("gcc.exe", "g++.exe");
-    #[cfg(not(target_os = "windows"))]
-    let (gcc_name, gpp_name) = ("gcc", "g++");
+    // Managed/downloaded toolchain (download build)
+    #[cfg(not(feature = "bundled-toolchain"))]
+    {
+        let tc_dir = super::toolchains_dir();
 
-    if let Some(bin_dir) = find_compiler_bin_dir(&tc_dir) {
-        let gcc = bin_dir.join(gcc_name);
-        let gpp = bin_dir.join(gpp_name);
-        let env_path = bin_dir.to_string_lossy().into_owned();
-        return Ok((gcc, gpp, Some(env_path)));
+        #[cfg(target_os = "windows")]
+        let (gcc_name, gpp_name) = ("gcc.exe", "g++.exe");
+        #[cfg(not(target_os = "windows"))]
+        let (gcc_name, gpp_name) = ("gcc", "g++");
+
+        if let Some(bin_dir) = find_compiler_bin_dir(&tc_dir) {
+            let gcc = bin_dir.join(gcc_name);
+            let gpp = bin_dir.join(gpp_name);
+            let env_path = bin_dir.to_string_lossy().into_owned();
+            return Ok((gcc, gpp, Some(env_path)));
+        }
     }
 
     anyhow::bail!("No compiler found. Please install GCC or configure a compiler path in Settings.")

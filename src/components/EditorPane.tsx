@@ -5,8 +5,11 @@ import { Theme } from "../store/appStore";
 import { makeT, UILang } from "../i18n/useI18n";
 import type * as Monaco from "monaco-editor";
 
-// Cấu hình Monaco worker paths (bundled với Vite)
-loader.config({ monaco: undefined });
+// Tắt web workers của Monaco để tránh lỗi trong Tauri WebView
+// (Workers cần blob URL không hỗ trợ trong CSP của Tauri release)
+loader.config({
+  "vs/nls": { availableLanguages: {} },
+});
 
 interface EditorPaneProps {
   language: Language;

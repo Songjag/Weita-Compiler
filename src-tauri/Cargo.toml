@@ -16,7 +16,7 @@ path = "src/main.rs"
 tauri-build = { version = "2", features = [] }
 
 [dependencies]
-tauri = { version = "2", features = [] }
+tauri = { version = "2", features = ["unstable"] }
 tauri-plugin-shell = "2"
 tauri-plugin-dialog = "2"
 tauri-plugin-fs = "2"
@@ -41,6 +41,10 @@ futures-util = "0.3"
 
 [features]
 custom-protocol = ["tauri/custom-protocol"]
+# Bundle MinGW toolchain into the app resources (Windows-only build variant).
+# When enabled: first-run extracts the bundled toolchain, no internet required.
+# When disabled: toolchain is downloaded on first run (default Linux behavior).
+bundled-toolchain = []
 
 [profile.release]
 panic = "abort"
