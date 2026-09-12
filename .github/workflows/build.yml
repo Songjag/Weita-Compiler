@@ -112,23 +112,13 @@ jobs:
           echo "MINGW_SHA256=$hash" >> $env:GITHUB_ENV
 
       # ── Tell Tauri to include resources/toolchain/ in the bundle ───────────
-      - name: Patch tauri.conf.json to include toolchain resources
+      - name: Build (Windows — bundled MinGW, no download required at runtime)
         shell: pwsh
         run: |
-          $conf = Get-Content "src-tauri/tauri.conf.json" | ConvertFrom-Json
-          # Add resources entry if not present
-          if (-not $conf.bundle.PSObject.Properties['resources']) {
-            $conf.bundle | Add-Member -Name 'resources' -Value @() -MemberType NoteProperty
-          }
-          # Ensure our toolchain zip is included
-          $entry = @{ src = "resources/toolchain/mingw64.zip"; target = "toolchain/mingw64.zip" }
-          $sha_entry = @{ src = "resources/toolchain/mingw64.zip.sha256"; target = "toolchain/mingw64.zip.sha256" }
-          $conf.bundle.resources = @($entry, $sha_entry)
-          $conf | ConvertTo-Json -Depth 10 | Set-Content "src-tauri/tauri.conf.json"
-          Write-Host "tauri.conf.json updated with toolchain resources"
-
-      - name: Build (Windows — bundled MinGW, no download required at runtime)
-        run: npx tauri build -- --features bundled-toolchain
+          # Pass resources config via --config flag to avoid modifying tauri.conf.json
+          $resources = '[{"src":"resources/toolchain/mingw64.zip","target":"toolchain/mingw64.zip"},{"src":"resources/toolchain/mingw64.zip.sha256","target":"toolchain/mingw64.zip.sha256"}]'
+          $config = "{`"bundle`":{`"resources`":$resources}}"
+          npx tauri build --config $config -- --features bundled-toolchain
 
       - name: Upload Windows artifacts
         uses: actions/upload-artifact@v4
