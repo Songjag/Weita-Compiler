@@ -184,6 +184,7 @@ export const App: React.FC = () => {
           isRunning={store.isRunning}
           theme={store.theme}
           fontSize={store.fontSize}
+          uiLang={store.uiLang}
         />
 
         <div
