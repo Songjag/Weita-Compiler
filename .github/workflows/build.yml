@@ -116,7 +116,7 @@ jobs:
         shell: pwsh
         run: |
           # Pass resources config via --config flag to avoid modifying tauri.conf.json
-          $resources = '[{"src":"resources/toolchain/mingw64.zip","target":"toolchain/mingw64.zip"},{"src":"resources/toolchain/mingw64.zip.sha256","target":"toolchain/mingw64.zip.sha256"}]'
+          $resources = '{"resources/toolchain/mingw64.zip":"toolchain/mingw64.zip","resources/toolchain/mingw64.zip.sha256":"toolchain/mingw64.zip.sha256"}'
           $config = "{`"bundle`":{`"resources`":$resources}}"
           npx tauri build --config $config -- --features bundled-toolchain
 
