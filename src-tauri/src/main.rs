@@ -34,6 +34,7 @@ fn main() {
             commands::get_toolchain_status,
             commands::run_code_cmd,
             commands::stop_process,
+            commands::build_project,
         ])
         // Note: run_code_cmd is exposed as "run_code_cmd" to frontend
         .run(tauri::generate_context!())

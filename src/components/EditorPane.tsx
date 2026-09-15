@@ -22,6 +22,7 @@ interface EditorPaneProps {
   theme: Theme;
   fontSize: number;
   uiLang: UILang;
+  fileName: string;
 }
 
 export const EditorPane: React.FC<EditorPaneProps> = ({
@@ -35,6 +36,7 @@ export const EditorPane: React.FC<EditorPaneProps> = ({
   theme,
   fontSize,
   uiLang,
+  fileName,
 }) => {
   const editorRef = useRef<Monaco.editor.IStandaloneCodeEditor | null>(null);
   const monacoRef = useRef<typeof Monaco | null>(null);
@@ -140,7 +142,7 @@ export const EditorPane: React.FC<EditorPaneProps> = ({
     <div className="editor-pane">
       <div className="editor-file-tab">
         <span className="file-tab active">
-          {language === "cpp" ? "main.cpp" : "main.c"}
+          {fileName}
         </span>
         <button
           className="copy-code-btn"
@@ -219,6 +221,7 @@ function registerCppCompletions(monaco: typeof Monaco) {
       provideCompletionItems(model, position) {
         const word = model.getWordUntilPosition(position);
         const linePrefix = model.getLineContent(position.lineNumber).slice(0, position.column - 1);
+        const hasIntReturnType = /\bint\s+$/.test(linePrefix.slice(0, linePrefix.length - word.word.length));
         const includePrefix = linePrefix.match(/(^|\s)#(?:include)?$/);
         const range = {
           startLineNumber: position.lineNumber,
@@ -309,7 +312,9 @@ function registerCppCompletions(monaco: typeof Monaco) {
           {
             label: "main",
             kind: CK.Snippet,
-            insertText: "int main() {\n\t$0\n\treturn 0;\n}",
+            insertText: hasIntReturnType
+              ? "main() {\n\t$0\n\treturn 0;\n}"
+              : "int main() {\n\t$0\n\treturn 0;\n}",
             insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
             documentation: "main function",
             range,
@@ -318,7 +323,7 @@ function registerCppCompletions(monaco: typeof Monaco) {
             label: "main-fast",
             kind: CK.Snippet,
             insertText: [
-              "int main() {",
+              hasIntReturnType ? "main() {" : "int main() {",
               "\tios_base::sync_with_stdio(false);",
               "\tcin.tie(NULL);",
               "\t$0",
@@ -514,6 +519,7 @@ function registerCppCompletions(monaco: typeof Monaco) {
             label: "using namespace std",
             kind: CK.Keyword,
             insertText: "using namespace std;",
+            filterText: "using",
             range,
           },
           // ── typedef / using ───────────────────────────────────────

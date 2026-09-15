@@ -16,9 +16,20 @@ import {
 import { RunResult } from "./types";
 import { save } from "@tauri-apps/plugin-dialog";
 import { writeTextFile } from "@tauri-apps/plugin-fs";
+import { readTextFile } from "@tauri-apps/plugin-fs";
+import { FileExplorer } from "./components/FileExplorer";
+import { ImagePreview } from "./components/ImagePreview";
+import { buildProject } from "./hooks/useTauri";
+import { BuildResult, WorkspaceFile } from "./types";
 
 export const App: React.FC = () => {
   const store = useAppStore();
+  const [workspacePath, setWorkspacePath] = useState<string | null>(null);
+  const [activeFile, setActiveFile] = useState("main.cpp");
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [files, setFiles] = useState<WorkspaceFile[]>([
+    { path: "main.cpp", name: "main.cpp", relativePath: "main.cpp", kind: "file" },
+  ]);
 
   // ── Resizable panel width ─────────────────────────────────────────────────
   const [panelWidth, setPanelWidth] = useState<number>(() => {
@@ -145,6 +156,38 @@ export const App: React.FC = () => {
     }
   }, [store.language, store.code]);
 
+  const handleOpenFile = useCallback((path: string, content: string) => {
+    setActiveFile(path);
+    setImagePreview(null);
+    store.setCode(content);
+    store.setLanguage(/\.c$/i.test(path) ? "c" : "cpp");
+  }, [store]);
+
+  const handleOpenImage = useCallback((path: string, dataUrl: string) => {
+    setActiveFile(path);
+    setImagePreview(dataUrl);
+  }, []);
+
+  const handleWorkspaceChange = useCallback(async (path: string, nextFiles: WorkspaceFile[]) => {
+    setWorkspacePath(path);
+    setFiles(nextFiles);
+    const main = nextFiles.find((file) => file.kind === "file" && /^(main\.cpp|main\.c)$/i.test(file.name));
+    if (main) handleOpenFile(main.path, await readTextFile(main.path));
+  }, [handleOpenFile]);
+
+  const handleBuild = useCallback(async (): Promise<BuildResult | null> => {
+    if (!workspacePath) return null;
+    try {
+      const result = await buildProject(workspacePath);
+      store.setConsoleOutput([result.stdout, result.stderr].filter(Boolean).join("\n"));
+      return result;
+    } catch (error) {
+      const result = { success: false, stdout: "", stderr: String(error) };
+      store.setConsoleOutput(result.stderr);
+      return result;
+    }
+  }, [workspacePath, store]);
+
   // ── Install toolchain ─────────────────────────────────────────────────────
   const handleInstallToolchain = useCallback(async () => {
     store.updateToolchainStatus("DOWNLOADING");
@@ -174,7 +217,21 @@ export const App: React.FC = () => {
       />
 
       <main className="app-main" ref={mainRef}>
-        <EditorPane
+        <FileExplorer
+          workspacePath={workspacePath}
+          files={files}
+          activePath={activeFile}
+          onWorkspaceChange={handleWorkspaceChange}
+          onFilesChange={setFiles}
+          onOpenFile={handleOpenFile}
+          onOpenImage={handleOpenImage}
+          onBuild={handleBuild}
+        />
+        {imagePreview ? <ImagePreview
+          fileName={activeFile.split("/").pop() ?? activeFile}
+          source={imagePreview}
+          onClose={() => setImagePreview(null)}
+        /> : <EditorPane
           language={store.language}
           code={store.code}
           onChange={store.setCode}
@@ -185,7 +242,8 @@ export const App: React.FC = () => {
           theme={store.theme}
           fontSize={store.fontSize}
           uiLang={store.uiLang}
-        />
+          fileName={activeFile.split("/").pop() ?? activeFile}
+        />}
 
         <div
           className="resizer"

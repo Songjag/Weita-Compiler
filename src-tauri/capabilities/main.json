@@ -12,12 +12,39 @@
     "core:webview:allow-set-webview-size",
     "dialog:default",
     {
+      "identifier": "fs:allow-read-dir",
+      "allow": [
+        { "path": "$HOME/**/*" },
+        { "path": "$DOWNLOAD/**/*" },
+        { "path": "$DOCUMENT/**/*" },
+        { "path": "$DESKTOP/**/*" }
+      ]
+    },
+    {
+      "identifier": "fs:allow-read-file",
+      "allow": [
+        { "path": "$HOME/**/*" },
+        { "path": "$DOWNLOAD/**/*" },
+        { "path": "$DOCUMENT/**/*" },
+        { "path": "$DESKTOP/**/*" }
+      ]
+    },
+    {
+      "identifier": "fs:allow-read-text-file",
+      "allow": [
+        { "path": "$HOME/**/*" },
+        { "path": "$DOWNLOAD/**/*" },
+        { "path": "$DOCUMENT/**/*" },
+        { "path": "$DESKTOP/**/*" }
+      ]
+    },
+    {
       "identifier": "fs:allow-write-text-file",
       "allow": [
-        { "path": "$HOME/**" },
-        { "path": "$DOWNLOAD/**" },
-        { "path": "$DOCUMENT/**" },
-        { "path": "$DESKTOP/**" }
+        { "path": "$HOME/**/*" },
+        { "path": "$DOWNLOAD/**/*" },
+        { "path": "$DOCUMENT/**/*" },
+        { "path": "$DESKTOP/**/*" }
       ]
     }
   ]

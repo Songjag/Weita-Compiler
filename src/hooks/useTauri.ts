@@ -5,6 +5,7 @@ import {
   RunResult,
   RunCodePayload,
   DownloadProgress,
+  BuildResult,
 } from "../types";
 
 /** Check toolchain availability */
@@ -30,6 +31,10 @@ export async function runCode(payload: RunCodePayload): Promise<RunResult> {
 /** Kill currently running process */
 export async function stopProcess(): Promise<void> {
   return invoke<void>("stop_process");
+}
+
+export async function buildProject(workspacePath: string): Promise<BuildResult> {
+  return invoke<BuildResult>("build_project", { workspacePath });
 }
 
 /** Listen to download progress events from backend */

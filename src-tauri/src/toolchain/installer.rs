@@ -12,31 +12,52 @@ use super::{
 };
 
 /// Check current toolchain status.
-/// On Linux: always tries system compiler first.
-/// On Windows (bundled build): checks bundled extracted toolchain first.
-/// On Windows (download build): tries system, then managed toolchain dir.
-pub async fn check_toolchain() -> ToolchainInfo {
+/// On Linux: tries system compiler first.
+/// On Windows (bundled): auto-extracts the bundled MinGW on first run —
+///   no user interaction required, behaves like Dev-C++.
+/// On Windows (download): tries system, then managed toolchain dir.
+pub async fn check_toolchain(app: &AppHandle) -> ToolchainInfo {
     info!("Checking toolchain for platform: {}", platform_key());
 
-    // 1. Check system compiler (all platforms)
+    // 1. System compiler (all platforms)
     if let Some((gcc, _gpp, version)) = detect_system_compiler() {
         info!("Using system compiler: {}", gcc);
         return make_ready_info("gcc", &version, &gcc);
     }
 
-    // 2a. Bundled toolchain (Windows bundled build only)
+    // 2. Bundled build — auto-extract on first run, no click needed
     #[cfg(feature = "bundled-toolchain")]
-    if let Some(info) = super::bundled::check_extracted() {
-        return info;
+    {
+        // Already extracted → use immediately
+        if let Some(info) = super::bundled::check_extracted() {
+            return info;
+        }
+
+        // First run: extract silently in the background
+        info!("First run — extracting bundled MinGW toolchain…");
+        emit_progress(app, 0, 0, DownloadPhase::Extracting, "Setting up bundled C/C++ compiler…");
+
+        match super::bundled::extract_bundled(app).await {
+            Ok(info) => {
+                emit_progress(app, 0, 0, DownloadPhase::Done, "Compiler ready!");
+                return info;
+            }
+            Err(e) => {
+                log::error!("Failed to extract bundled toolchain: {}", e);
+                emit_progress(app, 0, 0, DownloadPhase::Error,
+                    &format!("Failed to set up bundled compiler: {}", e));
+                return ToolchainInfo::error(&e.to_string());
+            }
+        }
     }
 
-    // 2b. Managed/downloaded toolchain (non-bundled builds)
+    // 3. Download build: check previously downloaded managed toolchain
     #[cfg(not(feature = "bundled-toolchain"))]
     if let Some(info) = check_managed_toolchain() {
         return info;
     }
 
-    // 3. Not found
+    // 4. Not found
     ToolchainInfo::not_found()
 }
 

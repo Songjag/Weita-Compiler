@@ -91,6 +91,19 @@ export interface RunCodePayload {
   compiler_path: string;
 }
 
+export interface WorkspaceFile {
+  path: string;
+  name: string;
+  relativePath: string;
+  kind: "file" | "directory";
+}
+
+export interface BuildResult {
+  success: boolean;
+  stdout: string;
+  stderr: string;
+}
+
 // ─── App error ───────────────────────────────────────────────────────────────
 
 export type AppErrorType =
